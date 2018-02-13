@@ -71,7 +71,8 @@ class Filter extends Component {
     return (
       <div style={defaultStyle}>
         <img/>
-        <input type="text"/>
+        <input type="text" onKeyUp={event =>
+          this.props.onTextChange(event.target.value)}/>
         Filter
       </div>
     );
@@ -80,15 +81,15 @@ class Filter extends Component {
 
 class Playlist extends Component {
   render() {
+    let playlist = this.props.playlist
     return (
       <div style={{...defaultStyle, width: "25%", display: 'inline-block'}}>
         <img/>
-        <h3>Playlist Name</h3>
+        <h3>{playlist.name}</h3>
         <ul>
-          <li>Song 1</li>
-          <li>Song 2</li>
-          <li>Song 3</li>
-          <li>Song 4</li>
+          {playlist.songs.map(song =>
+            <li>{song.name}</li>
+          )}
         </ul>
       </div>
     );
@@ -99,7 +100,10 @@ class App extends Component {
   // Setting initial state. Using constructor()
   constructor() {
     super();
-    this.state = {serverData: {}}
+    this.state = {
+      serverData: {},
+      filterString: ''
+    }
   }
 
   componentDidMount() {
@@ -125,15 +129,30 @@ class App extends Component {
             {/*this.state.serverData.user &&*/}
             {this.state.serverData.user.name}'s Playlists
           </h1>
+
           <PlaylistCounter playlists=
             {this.state.serverData.user.playlists}/>
+
           <MinuteCounter playlists=
             {this.state.serverData.user.playlists}/>
-          <Filter/>
+
+          <Filter onTextChange=
+            {text => this.setState({filterString: text})}/>
+
+          {/*Dynamic filters and Generate playlist component*/}
+          {this.state.serverData.user.playlists.filter(playlist =>
+            playlist.name.toLowerCase().includes(
+              this.state.filterString.toLowerCase())
+          ).map(playlist =>
+            <Playlist playlist={playlist} />
+          )}
+
+          {/*
           <Playlist/>
           <Playlist/>
           <Playlist/>
           <Playlist/>
+          */}
         </div> : <h1 style={defaultStyle}>Loading...</h1>
         }
       </div>
