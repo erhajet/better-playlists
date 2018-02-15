@@ -207,7 +207,7 @@ class App extends Component {
           <Playlist/>
           */}
         </div> : <button onClick={() => {
-          window.location = window.location.includes('localhost')
+          window.location = window.location.href.includes('localhost')
             ? 'http://localhost:8888/login'
             : 'https://erhajet-better-playlists-back.herokuapp.com/login'
           }
