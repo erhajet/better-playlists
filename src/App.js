@@ -132,6 +132,8 @@ class App extends Component {
 
     let accessToken = parsed.access_token;
 
+    if(!accessToken)
+      return;
     fetch('https://api.spotify.com/v1/me', {
       headers: {'Authorization': 'Bearer ' + accessToken}
     }).then(response => response.json())
@@ -204,7 +206,12 @@ class App extends Component {
           <Playlist/>
           <Playlist/>
           */}
-        </div> : <button onClick={() => window.location = 'http://localhost:8888/login'}
+        </div> : <button onClick={() => {
+          window.location = window.location.includes('localhost')
+            ? 'http://localhost:8888/login'
+            : 'https://erhajet-better-playlists-back.herokuapp.com/login'
+          }
+        }
           style={{padding: '20px', 'font-size': '24px', 'margin-top': '20px'}}>Sign in with Spotify</button>
         }
       </div>
