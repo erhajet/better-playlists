@@ -1,7 +1,20 @@
 import React, { Component } from 'react';
 import './App.css';
+import queryString from 'query-string';
 
 /*https://erhajet-better-playlists.herokuapp.com/*/
+/*https://erhajet-better-playlists-back.herokuapp.com/*/
+
+/*The App needs a token to fetch data from Spotify (using OAuth)
+
+  Token: Generated temporary key that's valid for a certain of time.
+  To get it, user has go to a backend server which has an understanding with
+  Spotify already.
+*/
+
+/*We also cloned MPJ's backend boilerplate from Github, read the README file
+  for the procedure.
+*/
 
 let defaultStyle = {
   color: '#f2f2f2'
@@ -84,7 +97,7 @@ class Playlist extends Component {
     let playlist = this.props.playlist
     return (
       <div style={{...defaultStyle, width: "25%", display: 'inline-block'}}>
-        <img/>
+        <img src={playlist.imageUrl} style={{width: '100px'}}/>
         <h3>{playlist.name}</h3>
         <ul>
           {playlist.songs.map(song =>
@@ -108,22 +121,56 @@ class App extends Component {
 
   componentDidMount() {
     {/*NOTE: Research more about arrow functions, and React Rendering*/}
+    {/*
     setTimeout(() => {
       this.setState({serverData: dummyData});
     }, 1000);
+    */}
+
+    let parsed = queryString.parse(window.location.search);
+    console.log(parsed)
+
+    let accessToken = parsed.access_token;
+
+    fetch('https://api.spotify.com/v1/me', {
+      headers: {'Authorization': 'Bearer ' + accessToken}
+    }).then(response => response.json())
+    .then(data => this.setState({
+      user: {
+        name: data.display_name
+      }
+    }))
+
+    fetch('https://api.spotify.com/v1/me/playlists', {
+      headers: {'Authorization': 'Bearer ' + accessToken}
+    }).then(response => response.json())
+    .then(data => this.setState({
+      playlists: data.items.map(item => {
+        console.log(data.items)
+        return {
+          name: item.name,
+          imageUrl: item.images[0].url,
+          songs: []
+        }
+      })
+    }))
   }
 
   render() {
-    let playlistToRender = this.state.serverData.user ?
-      this.state.serverData.user.playlists
-      .filter(playlist =>
+    {/*Validation, if playlist data doesn't exist, it will return empty set of data.
+      Again, read more about Render in React.
+    */}
+    let playlistToRender =
+      this.state.user &&
+      this.state.playlists
+      ? this.state.playlists.filter(playlist =>
         playlist.name.toLowerCase().includes(
-          this.state.filterString.toLowerCase())
-    ) : []
-    
+          this.state.filterString.toLowerCase()))
+      : []
+
     return (
       <div className="App">
-        {this.state.serverData.user ?
+        {this.state.user ?
         <div>
           <h1 style={{...defaultStyle, 'font-size': '54px'}}>
             {/*It has to do with the rendering
@@ -133,8 +180,8 @@ class App extends Component {
               Because the serverData state is empty for the 1st time,
               it needed to render the dummyData 1st into the state (?) */}
 
-            {/*this.state.serverData.user &&*/}
-            {this.state.serverData.user.name}'s Playlists
+            {/*this.state.user &&*/}
+            {this.state.user.name}'s Playlists
           </h1>
 
           <PlaylistCounter playlists=
@@ -157,7 +204,8 @@ class App extends Component {
           <Playlist/>
           <Playlist/>
           */}
-        </div> : <h1 style={defaultStyle}>Loading...</h1>
+        </div> : <button onClick={() => window.location = 'http://localhost:8888/login'}
+          style={{padding: '20px', 'font-size': '24px', 'margin-top': '20px'}}>Sign in with Spotify</button>
         }
       </div>
     );
