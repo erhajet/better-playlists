@@ -73,7 +73,7 @@ class MinuteCounter extends Component {
     }, 0)
     return (
       <div style={{...defaultStyle, width: "40%", display: 'inline-block'}}>
-        <h2>{Math.floor(totalDuration/60)} minutes</h2>
+        <h2>{Math.floor(totalDuration / 60)} minutes</h2>
       </div>
     );
   }
@@ -134,6 +134,7 @@ class App extends Component {
 
     if(!accessToken)
       return;
+
     fetch('https://api.spotify.com/v1/me', {
       headers: {'Authorization': 'Bearer ' + accessToken}
     }).then(response => response.json())
@@ -146,13 +147,37 @@ class App extends Component {
     fetch('https://api.spotify.com/v1/me/playlists', {
       headers: {'Authorization': 'Bearer ' + accessToken}
     }).then(response => response.json())
-    .then(data => this.setState({
-      playlists: data.items.map(item => {
-        console.log(data.items)
+    .then(playlistData => {
+      let playlists = playlistData.items
+      let trackDataPromises = playlists.map(playlist => {
+        let responsePromise = fetch(playlist.tracks.href, {
+          headers: {'Authorization': 'Bearer ' + accessToken}
+        })
+        let trackDataPromise = responsePromise.then(response => response.json())
+        return trackDataPromise
+      })
+      let allTracksDataPromises =
+        Promise.all(trackDataPromises)
+      let playlistPromise = allTracksDataPromises.then(tracksDatas => {
+        tracksDatas.forEach((trackData, i) => {
+          playlists[i].tracksDatas = trackData.items
+            .map(item => item.track)
+            .map(trackData => ({
+              name: trackData.name,
+              duration: trackData.duration_ms / 1000
+            }))
+        })
+        return playlists
+      })
+      return playlistPromise
+    })
+    .then(playlists => this.setState({
+      playlists: playlists.map(item => {
+        console.log(item.tracksDatas)
         return {
           name: item.name,
           imageUrl: item.images[0].url,
-          songs: []
+          songs: item.tracksDatas.slice(0,3)
         }
       })
     }))
@@ -165,9 +190,13 @@ class App extends Component {
     let playlistToRender =
       this.state.user &&
       this.state.playlists
-      ? this.state.playlists.filter(playlist =>
-        playlist.name.toLowerCase().includes(
+      ? this.state.playlists.filter(playlist => {
+        let matchesPlaylist = playlist.name.toLowerCase().includes(
+          this.state.filterString.toLowerCase())
+        let matchesSong = playlist.songs.find(song => song.name.toLowerCase().includes(
           this.state.filterString.toLowerCase()))
+        return matchesPlaylist || matchesSong
+        })
       : []
 
     return (
